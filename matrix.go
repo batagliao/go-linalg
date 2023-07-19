@@ -3,6 +3,8 @@ package linalg
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 )
 
 var empty_matrix = &Matrix{
@@ -302,7 +304,102 @@ func (m *Matrix) Equals(B *Matrix) bool {
 	return true
 }
 
-// ToString()
-// Determinant
-// Inverse
-// Mult
+// Inverse returns a new matrix being the inverse form of the original one
+// If the matrix os not square it returns an error
+// If the determinant of the matrix is 0, there is no inverse for the matrix and an error will be returned
+func (m *Matrix) Inverse() (*Matrix, error) {
+	if m.lines != m.columns {
+		return nil, errors.New("matrix musts be square")
+	}
+
+	det, err := m.Determinant()
+	if err != nil {
+		return nil, err
+	}
+
+	if det == 0 {
+		return nil, errors.New("determinant is zero. Matrix cannot be inverted")
+	}
+
+	/*
+			1. Form the augmented matrix by the identity matrix.
+		  2. Perform the row reduction operation on this augmented matrix to generate a row reduced echelon form of the matrix.
+		  3. The following row operations are performed on augmented matrix when required:
+		     - Interchange any two row.
+		     - Multiply each element of row by a non-zero integer.
+		     - Replace a row by the sum of itself and a constant multiple of another row of the matrix.
+	*/
+
+	order := m.lines
+	augmented := make([][]float64, order)
+	// copy m.data to augmented
+	for i := range augmented {
+		augmented[i] = make([]float64, order*2)
+		for j := 0; j < order; j++ {
+			augmented[i][j] = m.data[i][j]
+		}
+	}
+
+	for i := 0; i < order; i++ {
+
+		// create augmented matrix
+		for j := 0; j < order*2; j++ {
+			// add 1 to diagonal places of augmented part
+			if j == (i + order) {
+				augmented[i][j] = 1
+			}
+		}
+	}
+
+	// Interchange the row of matrix, starting in last row
+	for i := order - 1; i > 0; i-- {
+		if augmented[i-1][0] < augmented[i][0] {
+			tempSlice := augmented[i]
+			augmented[i] = augmented[i-1]
+			augmented[i-1] = tempSlice
+		}
+	}
+
+	// Replace a row by sum of itself and a
+	for i := 0; i < order; i++ {
+		for j := 0; j < order; j++ {
+			if j != i {
+				temp := augmented[j][i] / augmented[i][i]
+				for k := 0; k < order*2; k++ {
+					augmented[j][k] -= augmented[i][k] * temp
+				}
+			}
+		}
+	}
+
+	for i := 0; i < order; i++ {
+		temp := augmented[i][i]
+		for j := 0; j < order*2; j++ {
+			augmented[i][j] /= temp
+		}
+	}
+
+	// building the result matrix
+	result_data := make([][]float64, order)
+	for i := range result_data {
+		result_data[i] = make([]float64, order)
+		for j := range result_data[i] {
+			result_data[i][j] = augmented[i][order+j]
+		}
+	}
+	return NewMatrix(result_data), nil
+
+}
+
+func (m *Matrix) String() string {
+	builder := strings.Builder{}
+	for _, line := range m.data {
+		builder.WriteString("[")
+		for _, val := range line {
+			builder.WriteString(fmt.Sprintf("%v ", val))
+		}
+		builder.WriteString("]")
+		builder.WriteString("\n")
+	}
+	return builder.String()
+}

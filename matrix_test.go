@@ -439,3 +439,26 @@ func Test_Equals(t *testing.T) {
 	assert.False(t, A.Equals(C))
 	assert.False(t, B.Equals(D))
 }
+
+func Test_Inverse(t *testing.T) {
+	A := NewMatrix([][]float64{
+		{5, 7, 9},
+		{4, 3, 8},
+		{7, 5, 6},
+	})
+
+	Ai_expected := NewMatrix([][]float64{
+		{-0.20952380952380953, 0.028571428571428605, 0.2761904761904762},
+		{0.3047619047619048, -0.3142857142857144, -0.0380952380952381},
+		{-0.009523809523809552, 0.22857142857142862, -0.1238095238095238},
+	})
+
+	inv, err := A.Inverse()
+	assert.Nil(t, err)
+	assert.True(t, Ai_expected.Equals(inv))
+
+	// inverse of the identity is equals to the identity
+	I := NewIdentityMatrix(2)
+	Ii, _ := I.Inverse()
+	assert.True(t, I.Equals(Ii))
+}
